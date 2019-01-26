@@ -11,48 +11,59 @@ class Player {
 	public static void main(String args[]) {
 		Scanner in = new Scanner(System.in);
 		int bustersPerPlayer = in.nextInt(); // the amount of busters
-												// you control
+		// you control
 		int ghostCount = in.nextInt(); // the amount of ghosts on the
-										// map
+		// map
 		int myTeamId = in.nextInt(); // if this is 0, your base is on
-										// the top left of the map, if
-										// it is one, on the bottom
-										// right
-
+		// the top left of the map, if
+		// it is one, on the bottom
+		// right
+		
+		ArrayList<Ghost> g = new ArrayList<Ghost>();
+		Catcher myCatcher = null, yourCatcher =null;
+		Hunter myHunter = null, yourHunter =null;
+		Support mySup = null, yourSup = null;
 		// game loop
 		while (true) {
 			int entities = in.nextInt(); // the number of busters and
-			ArrayList<Ghost> g = new ArrayList<Ghost>();
-			Catcher myCatcher = null, yourCatcher;
-			Hunter myHunter = null, yourHunter;
-			Support sup = null;
+			
 
 			// ghosts visible to you
 			for (int i = 0; i < entities; i++) {
 				int entityId = in.nextInt(); // buster id or ghost id
 				int x = in.nextInt();
 				int y = in.nextInt(); // position of this buster /
-										// ghost
+				// ghost
 				int entityType = in.nextInt(); // the team id if it is
-												// a buster, -1 if it
-												// is a ghost.
+				// a buster, -1 if it
+				// is a ghost.
 				int entityRole = in.nextInt(); // -1 for ghosts, 0 for
-												// the HUNTER, 1 for
-												// the GHOST CATCHER
-												// and 2 for the
-												// SUPPORT
+				// the HUNTER, 1 for
+				// the GHOST CATCHER
+				// and 2 for the
+				// SUPPORT
 				int state = in.nextInt(); // For busters: 0=idle,
-											// 1=carrying a ghost. For
-											// ghosts: remaining
-											// stamina points.
+				// 1=carrying a ghost. For
+				// ghosts: remaining
+				// stamina points.
 				int value = in.nextInt(); // For busters: Ghost id
-											// being carried/busted or
-											// number of turns left
-											// when stunned. For
-											// ghosts: number of
-											// busters attempting to
-											// trap this ghost.
-
+				// being carried/busted or
+				// number of turns left
+				// when stunned. For
+				// ghosts: number of
+				// busters attempting to
+				// trap this ghost.
+				int supMoveX;
+				int supMoveY;
+				int supStunId=-10;
+				if( myTeamId ==0) {
+					// our base is at upper left corner
+					supMoveX = 14000;
+					supMoveY = 8000;
+				} else {
+					supMoveX = 100;
+					supMoveY = 100;
+				}
 				// update my busters' position
 				if (entityType == myTeamId) {
 					// busters of own team
@@ -77,66 +88,136 @@ class Player {
 						}
 
 					} else if (entityRole == 2) {
+						if (mySup == null ) {
+							mySup = new Support(x, y, entityId, state);
+						} else {
+							mySup.setX(x);
+							mySup.setY(y);
+							mySup.setState(state);
+						}
+						if( myTeamId ==0) {
+							// our base is at upper left corner
+							supMoveX = 15000;
+							supMoveY = 8500;
+						} else {
+							supMoveX = 100;
+							supMoveY = 100;
+						}
+						// has enemy carrying ghost in vision
+						if (yourCatcher != null) {
+							if(mySup.canStun(yourCatcher)) {
+								supStunId = yourCatcher.getId();
+							}
+
+						}
+
 						// sup
 						// sup.setX(x);
 						// sup.setY(y);
-					}
-				} else if (entityType == -1) {
-					// ghost
-					boolean newGhost = true;
-					Ghost oldGhost = null;
-					// new ghost
-					for (Ghost gh : g) {
-						if (gh.getId() == entityId) {
-							newGhost = false;
-							oldGhost = gh;
+					} else if (entityType == -1) {
+						// ghost
+						boolean newGhost = true;
+						Ghost oldGhost = null;
+						// new ghost
+						for (Ghost gh : g) {
+							if (gh.getId() == entityId) {
+								newGhost = false;
+								oldGhost = gh;
+							}
+
+						}
+						if (newGhost) {
+							g.add(new Ghost(x, y, entityId, state, value));
+						} else {
+							oldGhost.setX(x);
+							oldGhost.setY(y);
+							oldGhost.setStamina(state);
+							oldGhost.setNumOfBusters(value);
 						}
 
 					}
-					if (newGhost) {
-						g.add(new Ghost(x, y, entityId, state, value));
-					} else {
-						oldGhost.setX(x);
-						oldGhost.setY(y);
-						oldGhost.setStamina(state);
-						oldGhost.setNumOfBusters(value);
+
+				}else {
+					// enemy
+					if (entityType != myTeamId) {
+						if (entityRole == 0) {
+							if (yourHunter == null) {
+								yourHunter = new Hunter(x, y, entityId, state, false);
+							} else {
+								// hunter
+								yourHunter.setX(x);
+								yourHunter.setY(y);
+								yourHunter.setState(state);
+							}
+						} else if (entityRole == 1) {
+							if (yourCatcher == null) {
+								System.err.println("INIT yourCATCHER!!"  + x +" "+y);
+								System.err.println("yourCATCHER's id"  + entityId);
+								yourCatcher = new Catcher(x, y, entityId, state, false);
+							} else {
+								// hunter
+								System.err.println("SET CATCHER!!"  + x +" "+y);
+								yourCatcher.setX(x);
+								yourCatcher.setY(y);
+								yourCatcher.setState(state);
+							}
+
+						} else if (entityRole == 2) {
+							if (yourSup == null ) {
+								yourSup = new Support(x, y, entityId, state);
+
+								// sup
+								// sup.setX(x);
+								// sup.setY(y);
+							}
+						}
 					}
+				}
+
+
+
+
+
+
+				// Write an action using System.out.println()
+				// To debug: System.err.println("Debug messages...");
+
+				int hunterMoveX;
+				int hunterMoveY;
+
+
+				// set vision of ghosts
+				myHunter.setClosestGhost(g);
+				for (Ghost gh : g) {
+				}
+
+				// check hunter
+				if (myHunter.getClosestGhost() == null) {
+					hunterMoveX = 8000;
+					hunterMoveY = 4500;
+				} else {
+					// ghost exists
+					hunterMoveX = myHunter.getClosestGhost().getX();
+					hunterMoveY = myHunter.getClosestGhost().getY();
 
 				}
 
-			}
+				// First the HUNTER : MOVE x y | BUST id
+				// Second the GHOST CATCHER: MOVE x y | TRAP id | RELEASE
+				// Third the SUPPORT: MOVE x y | STUN id | RADAR
+				System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
+				System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
+				if(mySup != null && supStunId != -10) {
+					System.err.println("STUN id is"  + supStunId);
+					System.out.println("STUN " + supStunId);
+				} else {
+					System.err.println("STUN id is"  + supStunId);
+					System.out.println("MOVE " + supMoveX + " " + supMoveY);
+				}
 
-			// Write an action using System.out.println()
-			// To debug: System.err.println("Debug messages...");
 
-			int hunterMoveX;
-			int hunterMoveY;
-
-			// set vision of ghosts
-			myHunter.setClosestGhost(g);
-			System.err.println("ghost debug");
-			for (Ghost gh : g) {
-				System.err.print(gh.getId());
-			}
-
-			// check hunter
-			if (myHunter.getClosestGhost() == null) {
-				hunterMoveX = 8000;
-				hunterMoveY = 4500;
-			} else {
-				// ghost exists
-				hunterMoveX = myHunter.getClosestGhost().getX();
-				hunterMoveY = myHunter.getClosestGhost().getY();
 
 			}
-
-			// First the HUNTER : MOVE x y | BUST id
-			// Second the GHOST CATCHER: MOVE x y | TRAP id | RELEASE
-			// Third the SUPPORT: MOVE x y | STUN id | RADAR
-			System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
-			System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
-
-			System.out.println("MOVE 8000 4500");
 		}
 	}
 }
@@ -173,6 +254,12 @@ class Role {
 		this.x = x;
 		this.y = y;
 		this.id = id;
+	}
+
+	public static int getDistance(Role r1, Role r2) {
+		return ((r1.getX() - r2.getX()) ^ 2 + (r2.getY() - r2.getY()) ^ 2)
+				^ (1 / 2);
+
 	}
 
 }
@@ -268,11 +355,7 @@ class Hunter extends Buster {
 
 	}
 
-	private int getDistance(Role r1, Role r2) {
-		return ((r1.getX() - r2.getX()) ^ 2 + (r2.getY() - r2.getY()) ^ 2)
-				^ (1 / 2);
 
-	}
 
 }
 
@@ -301,4 +384,15 @@ class Support extends Buster {
 		// TODO Auto-generated constructor stub
 	}
 
+	public boolean canStun(Catcher enemy) {
+		if (getDistance(this, enemy) <= 1760) {
+			return true;
+		}
+		return false;
+
+	}
+
+
 }
+
+
