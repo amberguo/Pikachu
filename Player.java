@@ -3,10 +3,10 @@ import java.io.*;
 import java.math.*;
 
 /**
- * Send your busters out into the fog to trap ghosts and bring them
- * home!
+ * Send your busters out into the fog to trap ghosts and bring them home!
  **/
 class Player {
+
 
 	public static void main(String args[]) {
 		Scanner in = new Scanner(System.in);
@@ -15,18 +15,34 @@ class Player {
 		int ghostCount = in.nextInt(); // the amount of ghosts on the
 		// map
 		int myTeamId = in.nextInt(); // if this is 0, your base is on
+
 		// the top left of the map, if
 		// it is one, on the bottom
 		// right
-		
+
 		ArrayList<Ghost> g = new ArrayList<Ghost>();
-		Catcher myCatcher = null, yourCatcher =null;
-		Hunter myHunter = null, yourHunter =null;
+		Catcher myCatcher = null, yourCatcher = null;
+		Hunter myHunter = null, yourHunter = null;
 		Support mySup = null, yourSup = null;
+
+		int hunterMoveX = 0;
+		int hunterMoveY=0;
+		int supMoveX=0;
+		int supMoveY=0;
+		int supStunId = -10;
+		int baseX, baseY;
+		if (myTeamId == 0) {
+			baseX = 0;
+			baseY = 0;
+		} else {
+			baseX = 16000;
+			baseY = 9000;
+		}
+
 		// game loop
 		while (true) {
+
 			int entities = in.nextInt(); // the number of busters and
-			
 
 			// ghosts visible to you
 			for (int i = 0; i < entities; i++) {
@@ -53,17 +69,17 @@ class Player {
 				// ghosts: number of
 				// busters attempting to
 				// trap this ghost.
-				int supMoveX;
-				int supMoveY;
-				int supStunId=-10;
-				if( myTeamId ==0) {
-					// our base is at upper left corner
-					supMoveX = 14000;
-					supMoveY = 8000;
-				} else {
-					supMoveX = 100;
-					supMoveY = 100;
-				}
+
+				
+//				if (myTeamId == 0) {
+//					// our base is at upper left corner
+//					supMoveX = 14000;
+//					supMoveY = 8000;
+//				} else {
+//					supMoveX = 100;
+//					supMoveY = 100;
+//				}
+				
 				// update my busters' position
 				if (entityType == myTeamId) {
 					// busters of own team
@@ -78,34 +94,44 @@ class Player {
 						}
 					} else if (entityRole == 1) {
 						if (myCatcher == null) {
-							myCatcher = new Catcher(x, y, entityId, state,
-									false);
+							myCatcher = new Catcher(x, y, entityId, state, false);
 						} else {
 							// hunter
 							myCatcher.setX(x);
 							myCatcher.setY(y);
 							myCatcher.setState(state);
+							if (state == 1) {
+								myCatcher.setCatching(true);
+							} else {
+								myCatcher.setCatching(false);
+							}
 						}
 
 					} else if (entityRole == 2) {
-						if (mySup == null ) {
+						if (mySup == null) {
 							mySup = new Support(x, y, entityId, state);
 						} else {
 							mySup.setX(x);
 							mySup.setY(y);
 							mySup.setState(state);
 						}
-						if( myTeamId ==0) {
-							// our base is at upper left corner
-							supMoveX = 15000;
-							supMoveY = 8500;
-						} else {
-							supMoveX = 100;
-							supMoveY = 100;
+						//						if (myTeamId == 0) {
+						//							// our base is at upper left corner
+						//							supMoveX = 14000;
+						//							supMoveY = 7500;
+						//						} else {
+						//							supMoveX = 100;
+						//							supMoveY = 100;
+						//						}
+						if( yourCatcher != null ) {
+							// follow enemy's catcher
+							supMoveX = yourCatcher.getX();
+							supMoveY = yourCatcher.getY();
 						}
+
 						// has enemy carrying ghost in vision
 						if (yourCatcher != null) {
-							if(mySup.canStun(yourCatcher)) {
+							if (mySup.canStun(yourCatcher) && yourCatcher.getState()==1) {
 								supStunId = yourCatcher.getId();
 							}
 
@@ -137,7 +163,7 @@ class Player {
 
 					}
 
-				}else {
+				} else {
 					// enemy
 					if (entityType != myTeamId) {
 						if (entityRole == 0) {
@@ -151,19 +177,19 @@ class Player {
 							}
 						} else if (entityRole == 1) {
 							if (yourCatcher == null) {
-								System.err.println("INIT yourCATCHER!!"  + x +" "+y);
-								System.err.println("yourCATCHER's id"  + entityId);
+								System.err.println("INIT yourCATCHER!!" + x + " " + y);
+								System.err.println("yourCATCHER's id" + entityId);
 								yourCatcher = new Catcher(x, y, entityId, state, false);
 							} else {
 								// hunter
-								System.err.println("SET CATCHER!!"  + x +" "+y);
+								System.err.println("SET CATCHER!!" + x + " " + y);
 								yourCatcher.setX(x);
 								yourCatcher.setY(y);
 								yourCatcher.setState(state);
 							}
 
 						} else if (entityRole == 2) {
-							if (yourSup == null ) {
+							if (yourSup == null) {
 								yourSup = new Support(x, y, entityId, state);
 
 								// sup
@@ -174,16 +200,13 @@ class Player {
 					}
 				}
 
-
-
-
-
+				// set vision of ghosts
+				myHunter.setClosestGhost(g);
+				myHunter.setG(g);
 
 				// Write an action using System.out.println()
 				// To debug: System.err.println("Debug messages...");
 
-				int hunterMoveX;
-				int hunterMoveY;
 
 
 				// set vision of ghosts
@@ -205,20 +228,61 @@ class Player {
 				// First the HUNTER : MOVE x y | BUST id
 				// Second the GHOST CATCHER: MOVE x y | TRAP id | RELEASE
 				// Third the SUPPORT: MOVE x y | STUN id | RADAR
-				System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
-				System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
-				if(mySup != null && supStunId != -10) {
-					System.err.println("STUN id is"  + supStunId);
-					System.out.println("STUN " + supStunId);
-				} else {
-					System.err.println("STUN id is"  + supStunId);
-					System.out.println("MOVE " + supMoveX + " " + supMoveY);
-				}
-
-
 
 			}
+
+			Ghost ghostToBust = myHunter.GhostToBust();
+			// busting
+			if (ghostToBust != null) {
+				System.err.println("busting");
+			}
+
+			Ghost ghostToCatch = null;
+
+			if (ghostToBust != null && ghostToBust.getStamina() == 0) {
+				ghostToCatch = ghostToBust;
+				System.err.println("catching" + ghostToCatch.getId());
+			}
+
+			// First the HUNTER : MOVE x y | BUST id
+
+			if (ghostToBust != null) {
+				// busting
+				System.out.println("BUST " + ghostToBust.getId());
+
+			} else {
+				System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
+			}
+
+			// Second the GHOST CATCHER: MOVE x y | TRAP id | RELEASE
+
+			if (myCatcher.isCatching()) {
+				// drop if near base
+				if (Util.getDistance(myCatcher, baseX, baseY) < 1600) {
+					System.out.println("RELEASE");
+				} else {
+					System.out.println("MOVE " + baseX + " " + baseY);
+				}
+			} else if (ghostToCatch != null) {
+				System.out.println("TRAP " + ghostToCatch.getId());
+				myCatcher.setCatching(true);
+			} else {
+				System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
+			}
+
+			// Third the SUPPORT: MOVE x y | STUN id | RADAR
+			if (mySup != null && supStunId != -10) {
+				//System.err.println("STUN id is" + supStunId);
+				System.out.println("STUN " + supStunId);
+			} else {
+				//System.err.println("STUN id is" + supStunId);
+				System.err.println("sup move X is " +  supMoveX );
+				System.err.println("sup move Y is " +  supMoveY );
+				System.out.println("MOVE " + supMoveX + " " + supMoveY);
+			}
+
 		}
+
 	}
 }
 
@@ -257,8 +321,7 @@ class Role {
 	}
 
 	public static int getDistance(Role r1, Role r2) {
-		return ((r1.getX() - r2.getX()) ^ 2 + (r2.getY() - r2.getY()) ^ 2)
-				^ (1 / 2);
+		return ((r1.getX() - r2.getX()) ^ 2 + (r2.getY() - r2.getY()) ^ 2) ^ (1 / 2);
 
 	}
 
@@ -316,6 +379,15 @@ class Hunter extends Buster {
 	int state;
 	boolean busting;
 	Ghost closestGhost;
+	ArrayList<Ghost> g = null;
+
+	public ArrayList<Ghost> getG() {
+		return g;
+	}
+
+	public void setG(ArrayList<Ghost> g) {
+		this.g = g;
+	}
 
 	public Hunter(int x, int y, int id, int state, boolean busting) {
 		super(x, y, id, state);
@@ -347,8 +419,8 @@ class Hunter extends Buster {
 
 		int d = Integer.MAX_VALUE;
 		for (Ghost g : arr) {
-			if (getDistance(g, this) < d) {
-				d = getDistance(g, this);
+			if (Util.getDistance(g, this) < d) {
+				d = Util.getDistance(g, this);
 				this.closestGhost = g;
 			}
 		}
@@ -356,6 +428,20 @@ class Hunter extends Buster {
 	}
 
 
+
+	public Ghost GhostToBust() {
+		Ghost result = null;
+		for (Ghost gh : g) {
+			System.err.println("ghostToBustCalculate: " + Util.getDistance(this, gh) + "x: " + (this.getX() - gh.getX())
+					+ "y: " + (this.getY() - gh.getY()));
+			if (900 < Util.getDistance(this, gh) && Util.getDistance(this, gh) < 1700) {
+				result = gh;
+				System.err.println("can bust");
+			}
+		}
+		return result;
+
+	}
 
 }
 
@@ -392,7 +478,18 @@ class Support extends Buster {
 
 	}
 
-
 }
 
+class Util {
+	public static int getDistance(Role r1, Role r2) {
+		return (int) Math.sqrt((r1.getX() - r2.getX()) * (r1.getX() - r2.getX())
+				+ (r2.getY() - r2.getY()) * (r2.getY() - r2.getY()));
+
+	}
+
+	public static int getDistance(Role r, int x, int y) {
+		return (int) Math.sqrt((r.getX() - x) * (r.getX() - x)
+				+ (r.getY() - y) * (r.getY() - y));
+	}
+}
 
