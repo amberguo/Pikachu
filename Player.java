@@ -325,7 +325,10 @@ class Hunter extends Buster {
 	public Ghost GhostToBust() {
 		Ghost result = null;
 		for (Ghost gh : g) {
-			System.err.println("" + Util.getDistance(this, gh));
+			System.err.println(
+					"ghostToBustCalculate: " + Util.getDistance(this, gh)
+							+ "x: " + (this.getX() - gh.getX()) + "y: "
+							+ (this.getY() - gh.getY()));
 			if (900 < Util.getDistance(this, gh)
 					&& Util.getDistance(this, gh) < 1700) {
 				result = gh;
@@ -367,11 +370,13 @@ class Support extends Buster {
 
 class Util {
 	public static int getDistance(Role r1, Role r2) {
-		return (int)Math.sqrt((r1.getX() - r2.getX()) ^ 2 + (r2.getY() - r2.getY()) ^ 2);
+		return (int) Math.sqrt((r1.getX() - r2.getX()) * (r1.getX() - r2.getX())
+				+ (r2.getY() - r2.getY()) * (r2.getY() - r2.getY()));
 
 	}
 
 	public static int getDistance(Role r, int x, int y) {
-		return (int)Math.sqrt((r.getX() - x) ^ 2 + (r.getY() - y) ^ 2);
+		return (int) Math.sqrt((r.getX() - x) * (r.getX() - x)
+				+ (r.getY() - y) * (r.getY() - y));
 	}
 }
