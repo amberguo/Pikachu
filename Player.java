@@ -155,7 +155,7 @@ class Player {
 
 			// First the HUNTER : MOVE x y | BUST id
 
-			if (ghostToBust != null) {
+			if (ghostToBust != null && ghostToBust.getStamina()>0) {
 				// busting
 				System.out.println("BUST " + ghostToBust.getId());
 
@@ -166,11 +166,13 @@ class Player {
 			// Second the GHOST CATCHER: MOVE x y | TRAP id | RELEASE
 
 			if (myCatcher.isCatching()) {
+				System.err.println("catcher is catching");
 				// drop if near base
 				if (Util.getDistance(myCatcher, baseX, baseY) < 1600) {
 					System.out.println("RELEASE");
 				} else {
 					System.out.println("MOVE " + baseX + " " + baseY);
+					System.err.println("going home");
 				}
 			} else if (ghostToCatch != null) {
 				System.out.println("TRAP " + ghostToCatch.getId());
@@ -325,14 +327,10 @@ class Hunter extends Buster {
 	public Ghost GhostToBust() {
 		Ghost result = null;
 		for (Ghost gh : g) {
-			System.err.println(
-					"ghostToBustCalculate: " + Util.getDistance(this, gh)
-							+ "x: " + (this.getX() - gh.getX()) + "y: "
-							+ (this.getY() - gh.getY()));
 			if (900 < Util.getDistance(this, gh)
 					&& Util.getDistance(this, gh) < 1700) {
 				result = gh;
-				System.err.println("can bust");
+				
 			}
 		}
 		return result;
