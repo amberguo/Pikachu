@@ -67,39 +67,39 @@ class Player {
 						}
 					} else if (entityRole == 1) {
 						if (myCatcher == null) {
-							myCatcher = new Catcher(x, y, entityId, state, false);
+							myCatcher = new Catcher(x, y, entityId, state,
+									false);
 						} else {
 							// hunter
 							myCatcher.setX(x);
 							myCatcher.setY(y);
 							myCatcher.setState(state);
 						}
-					
+
 					} else if (entityRole == 2) {
 						// sup
-						sup.setX(x);
-						sup.setY(y);
+						// sup.setX(x);
+						// sup.setY(y);
+					}
+				} else if (entityType == -1) {
+					// ghost
+					boolean newGhost = true;
+					Ghost oldGhost = null;
+					// new ghost
+					for (Ghost gh : g) {
+						if (gh.getId() == entityId) {
+							newGhost = false;
+							oldGhost = gh;
+						}
+
+					}
+					if (newGhost) {
+						g.add(new Ghost(x, y, entityId, state, value));
 					} else {
-						// ghost
-						boolean newGhost = true;
-						Ghost oldGhost = null;
-						//new ghost
-						for (Ghost gh:g) {
-							if (gh.getId() == entityId) {
-								newGhost = false;
-								oldGhost = gh;
-							}
-							
-						}
-						if (newGhost) {
-							g.add(new Ghost(x,y,entityId,state,value));
-						} else {
-							oldGhost.setX(x);
-							oldGhost.setY(y);
-							oldGhost.setStamina(state);
-							oldGhost.setNumOfBusters(value);
-						}
-						
+						oldGhost.setX(x);
+						oldGhost.setY(y);
+						oldGhost.setStamina(state);
+						oldGhost.setNumOfBusters(value);
 					}
 
 				}
@@ -114,6 +114,11 @@ class Player {
 
 			// set vision of ghosts
 			myHunter.setClosestGhost(g);
+			System.err.println("ghost debug");
+			for (Ghost gh : g) {
+				System.err.print(gh.getId());
+			}
+
 			// check hunter
 			if (myHunter.getClosestGhost() == null) {
 				hunterMoveX = 8000;
@@ -128,9 +133,9 @@ class Player {
 			// First the HUNTER : MOVE x y | BUST id
 			// Second the GHOST CATCHER: MOVE x y | TRAP id | RELEASE
 			// Third the SUPPORT: MOVE x y | STUN id | RADAR
-			System.out.println("MOVE " + hunterMoveX + hunterMoveY);
-			System.out.println("MOVE " + hunterMoveX + hunterMoveY);
-			
+			System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
+			System.out.println("MOVE " + hunterMoveX + " " + hunterMoveY);
+
 			System.out.println("MOVE 8000 4500");
 		}
 	}
