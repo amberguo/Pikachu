@@ -126,7 +126,7 @@ class Player {
 						// has enemy carrying ghost in vision
 						if (yourCatcher != null) {
 							if (mySup.canStun(yourCatcher)
-									&& yourCatcher.getState() == 1) {
+							/* && yourCatcher.getState() == 1 */) {
 								supStunId = yourCatcher.getId();
 							}
 						}
@@ -152,9 +152,9 @@ class Player {
 						oldGhost.setY(y);
 						oldGhost.setStamina(state);
 						oldGhost.setNumOfBusters(value);
+						oldGhost.setExist(true);
 					}
 
-					System.err.println("adding a ghost");
 				} else {
 					// enemy
 
@@ -192,6 +192,17 @@ class Player {
 
 				}
 			}
+			ArrayList<Ghost> ghostToRemove = new ArrayList<Ghost>();
+
+			// cleaning nonexistent ghost
+			for (Ghost gh : g) {
+				if (!gh.isExist()) {
+					ghostToRemove.add(gh);
+				}
+			}
+			for (Ghost gh : ghostToRemove) {
+				g.remove(gh);
+			}
 
 			/*
 			 * // check hunter if (myHunter.getClosestGhost() == null)
@@ -210,11 +221,19 @@ class Player {
 			// set vision of ghosts
 			myHunter.setG(g);
 
+			System.err.println("size of g " + g.size());
+			if (myHunter.getGhostToBust() != null
+					&& (!myHunter.getGhostToBust().isExist()
+							|| myHunter.getGhostToBust().getStamina() == 0)) {
+				myHunter.setGhostToBust(null);
+			}
+
 			if (myHunter.getGhostToBust() == null) {
 				myHunter.setGhostToBust(myHunter.GhostToBust());
 			}
 
 			if (myHunter.getGhostToBust() != null
+					&& g.contains(myHunter.getGhostToBust())
 					&& myHunter.getGhostToBust().getStamina() > 0
 					&& Util.getDistance(myHunter.getGhostToBust(),
 							myHunter) > 900
@@ -222,25 +241,38 @@ class Player {
 							myHunter) < 1760) {
 				// busting
 				System.out.println("BUST " + myHunter.getGhostToBust().getId());
+				myHunter.setGhostToBust(null);
 				if (myCatcher.getGhostToCatch() == null) {
 					myCatcher.setGhostToCatch(myHunter.getGhostToBust());
 				}
 
 			} else {
+				// move to busting
 
-				if (myHunter.getGhostToBust() != null) {
+				if (myHunter.getGhostToBust() != null
+						&& g.contains(myHunter.getGhostToBust())) {
 					System.out.println("MOVE "
 							+ Util.getX(myHunter.getGhostToBust().getX(),
 									myHunter.getGhostToBust().getY())
 							+ " " + Util.getY(myHunter.getGhostToBust().getX(),
 									myHunter.getGhostToBust().getY()));
 				} else {
-					System.out.println("MOVE 8000 4500");
+					System.out.println(myHunter.patrol());
 				}
 
 			}
 
+			System.err.println("x:" + myHunter.getX() + "y:" + myHunter.getY());
+
 			// Second the GHOST CATCHER: MOVE x y | TRAP id | RELEASE
+			for (Ghost gh : g) {
+				if (gh.getStamina() == 0)
+					myCatcher.setQ(gh);
+			}
+
+			if (!g.contains(myCatcher.getGhostToCatch())) {
+				myCatcher.setQ(null);
+			}
 
 			if (myCatcher.getGhostToCatch() == null
 					&& myHunter.getGhostToBust() != null) {
@@ -248,7 +280,6 @@ class Player {
 			}
 
 			if (myCatcher.isCatching()) {
-				System.err.println("catcher is catching");
 				// drop if near base
 				if (Util.getDistance(myCatcher, baseX, baseY) < 1600) {
 					System.out.println("RELEASE");
@@ -256,38 +287,73 @@ class Player {
 					System.out.println("MOVE " + baseX + " " + baseY);
 					System.err.println("going home");
 				}
-			} else if (myCatcher.getGhostToCatch() != null
-					&& myCatcher.getGhostToCatch().getStamina() == 0
-					&& Util.getDistance(myCatcher.getGhostToCatch(),
-							myCatcher) > 900
-					&& Util.getDistance(myCatcher.getGhostToCatch(),
-							myCatcher) < 1760) {
-
-				System.out
-						.println("TRAP " + myCatcher.getGhostToCatch().getId());
-
 			} else {
-				if (myCatcher.getGhostToCatch() != null) {
-					System.out.println("MOVE "
-							+ Util.getX(myCatcher.getGhostToCatch().getX(),
-									myCatcher.getGhostToCatch().getY())
-							+ " "
-							+ Util.getY(myCatcher.getGhostToCatch().getX(),
-									myCatcher.getGhostToCatch().getY()));
+				boolean near = false;
+				Ghost target = null;
+				for (Ghost gh : g) {
+					if (Util.getDistance(gh, myCatcher) > 900
+							&& Util.getDistance(gh, myCatcher) < 1760
+							&& gh.getStamina() == 0) {
+						near = true;
+						target = gh;
+						break;
+
+					}
+				}
+				// check ghost on the way
+
+				if (near) {
+
+					System.out.println("TRAP " + target.getId());
+				} else if (myCatcher.getGhostToCatch() != null
+						&& g.contains(myCatcher.getGhostToCatch())
+						&& myCatcher.getGhostToCatch().getStamina() == 0
+						&& Util.getDistance(myCatcher.getGhostToCatch(),
+								myCatcher) > 900
+						&& Util.getDistance(myCatcher.getGhostToCatch(),
+								myCatcher) < 1760) {
+
+					System.out.println(
+							"TRAP " + myCatcher.getGhostToCatch().getId());
+					myCatcher.setGhostToCatch(null);
+
 				} else {
-					System.out.println("MOVE 8000 4500");
+					if (myCatcher.getGhostToCatch() != null) {
+						System.out.println("MOVE "
+								+ Util.getX(myCatcher.getGhostToCatch().getX(),
+										myCatcher.getGhostToCatch().getY())
+								+ " "
+								+ Util.getY(myCatcher.getGhostToCatch().getX(),
+										myCatcher.getGhostToCatch().getY()));
+					} else {
+						myCatcher.setQ(null);
+						System.out.println(myCatcher.patrol());
+					}
 				}
 			}
 
 			// Third the SUPPORT: MOVE x y | STUN id | RADAR
-			if (mySup != null && supStunId != -10) {
+			mySup.turn();
+			if (supStunId != -10 && (mySup.getCool() == 0)) {
 				// System.err.println("STUN id is" + supStunId);
 				System.out.println("STUN " + supStunId);
+				mySup.setCool(20);
+				if (myCatcher.getGhostToCatch() != null) {
+					for (Ghost gh : g) {
+						if (gh.getStamina() == 0) {
+							myCatcher.setGhostToCatch(gh);
+						}
+					}
+				}
 			} else {
 
-				System.out.println("MOVE " + supMoveX + " " + supMoveY);
+				System.out.println(mySup.patrol());
 			}
 
+			// reset ghost array
+			for (Ghost gh : g) {
+				gh.setExist(false);
+			}
 		}
 
 	}
@@ -328,21 +394,25 @@ class Role {
 		this.id = id;
 	}
 
-	public static int getDistance(Role r1, Role r2) {
-		return ((r1.getX() - r2.getX()) ^ 2 + (r2.getY() - r2.getY()) ^ 2)
-				^ (1 / 2);
-
-	}
-
 }
 
 class Ghost extends Role {
 	int stamina, numOfBusters;
+	boolean exist;
+
+	public boolean isExist() {
+		return exist;
+	}
+
+	public void setExist(boolean exist) {
+		this.exist = exist;
+	}
 
 	public Ghost(int x, int y, int id, int stamina, int numOfBusters) {
 		super(x, y, id);
 		this.stamina = stamina;
 		this.numOfBusters = numOfBusters;
+		exist = true;
 
 	}
 
@@ -367,6 +437,8 @@ class Ghost extends Role {
 class Buster extends Role {
 
 	int state;
+	int dest = 0;// 0 1 2 3
+	String nextMove = "";
 
 	public Buster(int x, int y, int id, int state) {
 		super(x, y, id);
@@ -381,6 +453,59 @@ class Buster extends Role {
 	public void setState(int state) {
 		this.state = state;
 	}
+
+	public String patrol() {
+		System.err.println("PATROLLING");
+		int[] xarr = { 3500, 12000, 3500, 12000 };
+		int[] yarr = { 1250, 1250, 6500, 6500 };
+
+		if (dest == 0) {
+			System.err.println("PATROLLING 0");
+			if (x == xarr[dest] && y == yarr[dest]) {
+				dest = (dest + 1) % 4;
+				return "MOVE " + xarr[dest] + " " + yarr[dest];
+			} else {
+				return "MOVE " + xarr[dest] + " " + yarr[dest];
+			}
+		} else if (dest == 1) {
+			System.err.println("PATROLLING 1");
+			if (x == xarr[dest] && y == yarr[dest]) {
+				dest = (dest + 1) % 4;
+				return "MOVE " + xarr[dest] + " " + yarr[dest];
+			} else {
+				return "MOVE " + xarr[dest] + " " + yarr[dest];
+			}
+		} else if (dest == 2) {
+			if (x == xarr[dest] && y == yarr[dest]) {
+				dest = (dest + 1) % 4;
+				return "MOVE " + xarr[dest] + " " + yarr[dest];
+			} else {
+				return "MOVE " + xarr[dest] + " " + yarr[dest];
+			}
+		} else if (dest == 3) {
+			if (x == xarr[dest] && y == yarr[dest]) {
+				dest = (dest + 1) % 4;
+				return "MOVE " + xarr[dest] + " " + yarr[dest];
+			} else {
+				return "MOVE " + xarr[dest] + " " + yarr[dest];
+			}
+		}
+		System.err.println(dest);
+		return "";
+	}
+	/*
+	 * if (nextMove != "") { String move = nextMove; nextMove = "";
+	 * return move; }
+	 * 
+	 * if (x < 8000 && y < 4500) { if (nextMove == "") { nextMove =
+	 * "MOVE 15000 1000"; } return "MOVE 15000 1000"; } else if (x <
+	 * 8000 && y > 4500) { if (nextMove == "") { nextMove =
+	 * "MOVE 1000 1000"; } return "MOVE 1000 1000"; } else if (x >
+	 * 8000 && y < 4500) { if (nextMove == "") { nextMove =
+	 * "MOVE 15000 8000"; } return "MOVE 15000 8000"; } else { if
+	 * (nextMove == "") { nextMove = "MOVE 1000 8000"; } return
+	 * "MOVE 1000 8000"; } }
+	 */
 
 }
 
@@ -451,7 +576,7 @@ class Hunter extends Buster {
 	}
 
 	public Ghost GhostToBust() {
-		Ghost result = null;
+		Ghost result = this.getClosestGhost();
 		for (Ghost gh : g) {
 
 			if (900 < Util.getDistance(this, gh)
@@ -469,6 +594,20 @@ class Hunter extends Buster {
 class Catcher extends Buster {
 	boolean catching;
 	Ghost ghostToCatch;
+	Queue<Ghost> ghostQ = new LinkedList<Ghost>();
+
+	public void setQ(Ghost ghostToAdd) {
+		if (ghostToAdd != null && !(ghostQ.contains(ghostToAdd))
+				&& (ghostToCatch != ghostToAdd)) {
+			ghostQ.add(ghostToAdd);
+		}
+
+		if (ghostToCatch == null) {
+			ghostToCatch = ghostQ.poll();
+		}
+		System.err.println(ghostQ.size());
+
+	}
 
 	public Ghost getGhostToCatch() {
 		return ghostToCatch;
@@ -495,13 +634,29 @@ class Catcher extends Buster {
 
 class Support extends Buster {
 
+	int cool = 0;
+
+	public int getCool() {
+		return cool;
+	}
+
+	public void setCool(int cool) {
+		this.cool = cool;
+	}
+
+	public void turn() {
+		if (cool != 0) {
+			cool--;
+		}
+	}
+
 	public Support(int x, int y, int id, int state) {
 		super(x, y, id, state);
 		// TODO Auto-generated constructor stub
 	}
 
 	public boolean canStun(Catcher enemy) {
-		if (getDistance(this, enemy) <= 1760) {
+		if (Util.getDistance(this, enemy) <= 1760) {
 			return true;
 		}
 		return false;
